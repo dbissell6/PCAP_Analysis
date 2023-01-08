@@ -226,7 +226,70 @@ def get_http_file_data():
 	  except:
 	    pass
 
+def get_smb():
+  # Run the TShark command and capture the other output
+  output = subprocess.run(['tshark', '-r', args.pcap, '-Y', 'smb', '-T', 'json'], capture_output=True)
+  if output:
+    # Load the JSON output into a Python object
+    output_json = json.loads(output.stdout)
+    # Add column to original df
+    df['smb.cmd'] = ''
 
+    # Iterate over the list of frames    
+    for frame in output_json:
+      # Extract frame number and smb command
+      frame_number = frame['_source']['layers']['frame']['frame.number']
+      smb = frame['_source']['layers']['smb']['SMB Header']['smb.cmd']
+      try:
+          df.loc[int(frame_number), 'smb.cmd']= smb
+      except:
+          pass
+
+def get_data():
+  # Run the TShark command and capture the other output
+  output = subprocess.run(['tshark', '-r', args.pcap, '-T', 'json','-e','frame.number', '-e', 'data'], capture_output=True)
+  if output:
+    # Load the JSON output into a Python object
+    output_json = json.loads(output.stdout)
+    # Add column to original df
+    df['data'] = ''
+    #convert hex string to ascii string
+    def hex_to_ascii(hex_string):
+      return bytearray.fromhex(hex_string).decode()
+
+    # Iterate over the list of frames    
+    for frame in output_json:
+      try:
+        # Extract frame number and data
+        frame_number = frame['_source']['layers']['frame.number']
+        data = frame['_source']['layers']['data']
+        ascii_string = hex_to_ascii(data[0])
+        df.loc[int(frame_number[0]), 'data']= ascii_string
+      except:
+          pass
+
+def get_dns():
+  # Run the TShark command and capture the other output
+  output = subprocess.run(['tshark', '-r', args.pcap, '-T', 'json','-e','frame.number', '-e', 'data'], capture_output=True)
+  if output:
+    # Load the JSON output into a Python object
+    output_json = json.loads(output.stdout)
+    # Add column to original df
+    df['data'] = ''
+    #convert hex string to ascii string
+    def hex_to_ascii(hex_string):
+      return bytearray.fromhex(hex_string).decode()
+
+    # Iterate over the list of frames    
+    for frame in output_json:
+      try:
+        # Extract frame number and data
+        frame_number = frame['_source']['layers']['frame.number']
+        data = frame['_source']['layers']['data']
+        ascii_string = hex_to_ascii(data[0])
+        df.loc[int(frame_number[0]), 'data']= ascii_string
+      except:
+          pass
 ################################################################################################################################################################################
 ################################################################################################################################################################################ 
 def find_fishy_phrases():      
@@ -245,16 +308,16 @@ def find_fishy_phrases():
         encoded_string = str(base64.b64encode(args.phrase.encode('utf-8')))
         Search_words.append(encoded_string)
     
-    to_search=['http.file_data','ftp.request.arg','ftp.request.command']
+    to_search=['http.file_data','ftp.request.arg','ftp.request.command','data']
     to_search=[x for x in to_search if x in df.columns]
     for col in to_search:         
        
    # Iterate over the rows in the dataframe
       for index, row in df.iterrows():
-      # Split the 'http.file_data' column into a list of words
+      # Split the 'to_search' column into a list of words
         words = str(row[col])
       
-      # Check if any of the search words are in the list of words
+      # Check if any of the search words are in the Search_words list
         to_add=[]
         for search_word in Search_words:
           if search_word in words:
@@ -382,7 +445,9 @@ get_ftp_request()
 get_ftp_response()
 get_http_request()            
 get_http_response()            
-get_http_file_data()      
+get_http_file_data()  
+get_smb()
+get_data()
 # Swim fishy
 find_fishy_phrases()
 #Format df column data
@@ -427,12 +492,12 @@ print("")
 
 ##### Start printing fishy findings
 Second_meth=[x for x in df.columns if 'fishy' in x]
-print(Second_meth)
+#print(Second_meth)
 z = 0
 for thing in Second_meth:
   # Get the unique values from column 'A'
-  unique_values = df[thing].unique()
-  if len(unique_values)>2:
+  unique_values = [x for x in df[thing].unique() if x != '']
+  if len(unique_values)>0:
     if z == 0:
       print(Fore.RED +Back.YELLOW+"!Found something fishy!"+Style.RESET_ALL)
       z+=1
@@ -576,6 +641,6 @@ def find_anomalies(df):
 		print('Anonomly detection failed')
 
 ### Run functions to create plots/detect anomalies
-sankey(df,ip_list)
-find_anomalies(df)
-make_plots(df)
+#sankey(df,ip_list)
+#find_anomalies(df)
+#make_plots(df)
