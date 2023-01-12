@@ -288,24 +288,28 @@ def get_data():
 
 def get_dns():
   # Run the TShark command and capture the other output
-  output = subprocess.run(['tshark', '-r', args.pcap, '-T', 'json','-e','frame.number', '-e', 'data'], capture_output=True)
+  output = subprocess.run(['tshark', '-r', args.pcap, '-Y', 'dns', '-T', 'json', '-e', 'frame.number', '-e', 'dns.qry.name', '-e', 'dns.resp.type', '-e', 'dns.resp.name'], capture_output=True)
   if output:
+    
     # Load the JSON output into a Python object
     output_json = json.loads(output.stdout)
     # Add column to original df
-    df['data'] = ''
-    #convert hex string to ascii string
-    def hex_to_ascii(hex_string):
-      return bytearray.fromhex(hex_string).decode()
+    df['dns.qry.name'] = ''
+    df['dns.resp.type'] = ''
+    df['dns.resp.name'] = ''
 
     # Iterate over the list of frames    
     for frame in output_json:
       try:
         # Extract frame number and data
         frame_number = frame['_source']['layers']['frame.number']
-        data = frame['_source']['layers']['data']
-        ascii_string = hex_to_ascii(data[0])
-        df.loc[int(frame_number[0]), 'data']= ascii_string
+        query_name = frame['_source']['layers']['dns.qry.name']
+        response_type = frame['_source']['layers']['dns.resp.type']
+        response_name = frame['_source']['layers']['dns.resp.name']
+        
+        df.loc[int(frame_number[0]), 'dns.qry.name']= query_name
+        df.loc[int(frame_number[0]), 'dns.resp.type']= response_type
+        df.loc[int(frame_number[0]), 'dns.resp.name']= response_name
       except:
           pass
 ################################################################################################################################################################################
@@ -315,18 +319,26 @@ def find_fishy_phrases():
 # if content matches a fishy phrase add a new column to that row with the phrase
 
     Search_words = ["<!ENTITY",'whoami','echo','admin','root','hostname','pwd','nc64.exe','user','pass','PASS', 'atob', 'auth','denied','login','usr','success','psswd','pw','logon','key','cipher','sum','token','pin','code','fail','correct','restrict']                 
-    
+    #print(df['dns.qry.name'].unique())
     # Add user fishy phrase
     if args.phrase != '':
         Search_words.append(args.phrase)
         print('')
         print('A fishy phrase was added: '+args.phrase)
+        #print('A fishy phrase Base64 encoded: '+encoded_string[:5])
+        #Search_words.append(encoded_string[:5])
+    variations = []    
+    for word in Search_words:
         # Add variations to the phrase(base64 encoded...)
         # Encode the string
-        encoded_string = str(base64.b64encode(args.phrase.encode('utf-8')))
-        Search_words.append(encoded_string)
-    
-    to_search=['http.file_data','ftp.request.arg','ftp.request.command','data']
+        encoded_string = base64.b64encode(word.encode('utf-8'))
+
+        encoded_string = encoded_string.decode('utf-8')
+        encoded_string = encoded_string.replace('=','')
+        #print('A fishy phrase Base64 encoded: '+encoded_string[:5])
+        variations.append(encoded_string[:5])
+    Search_words.extend(variations)
+    to_search=['http.file_data','ftp.request.arg','ftp.request.command','data','dns.qry.name']
     to_search=[x for x in to_search if x in df.columns]
     for col in to_search:         
        
@@ -411,38 +423,29 @@ init()
 colors = [1, 11, 41, 14, 27, 57]
 
 # Define the string to color
+
 string="""
-******************************************************************************************************************************************************
-******************************************************************************************************************************************************
-***********************ti,:**********************************************ti,:**********************************************ti,:***********************
-********************f)::, (*******************************************f)::, (*******************************************f)::, (***********************
-*******************(,:t*.i*******************************************(,:t*.i*******************************************(,:t*.i************************
-******************;.(***,:******************************************;.(***,:******************************************;.(***,:************************
-*****************;.f****t,:(f**************************************;.f****t,:(f**************************************;.f****t,:(f*********************
-****************( t*******(::it***********************************( t*******(::it***********************************( t*******(::it*******************
-****************,:**********fi,;f*********************************,:**********fi,;f*********************************,:**********fi,;f*****************
-*************(ff )************f,,f*****************************(ff )************f,,f*****************************(ff )************f,,f****************
-************; ,f.i****ft*******f.;**((************************; ,f.i****ft*******f.;**((************************; ,f.i****ft*******f.;**((************
-**********f:,t:,.,****; :(******) fi .;*********************f:,t:,.,****; :(******) fi .;*********************f:,t:,.,****; :(******) fi .;***********
-**********:,f**(:;f***( i,;f****( :.(f.;********************:,f**(:;f***( i,;f****( :.(f.;********************:,f**(:;f***( i,;f****( :.(f.;**********
-*********) f**********( tf,:****f))f**t )******************) f**********( tf,:****f))f**t )******************) f**********( tf,:****f))f**t )*********
-*********,:*********f).i**t (**********:,******************,:*********f).i**t (**********:,******************,:*********f).i**t (**********:,*********
-*********.;*******fi,;(****.i(,)*******;.******************.;*******fi,;(****.i(,)*******;.******************.;*******fi,;(****.i(,)*******;.*********
-*********,;******t.:f*****f.,.;.i******,:******************,;******t.:f*****f.,.;.i******,:******************,;******t.:f*****f.,.;.i******,:*********
-*********i f****f.:*******i .(*) f****) t******************i f****f.:*******i .(*) f****) t******************i f****f.:*******i .(*) f****) t*********
-*********f,:****t t*******()f**t t***) )*******************f,:****t t*******()f**t t***) )*******************f,:****t t*******()f**t t***) )**********
-**********f,,t**t (************i.f*t:,(*********************f,,t**t (************i.f*t:,(*********************f,,t**t (************i.f*t:,(***********
-************i,;t*::***********).)(:,if************************i,;t*::***********).)(:,if************************i,;t*::***********).)(:,if************
-*************f)::; ,)tffffff), ,:;(****************************f)::; ,)tffffff), ,:;(****************************f)::; ,)tffffff), ,:;(***************
-****************t(i:,::::::::;)tf*********************************t(i:,::::::::;)tf*********************************t(i:,::::::::;)tf*****************
-**********************fffff*********************************************fffff*********************************************fffff***********************
-******************************************************************************************************************************************************
+vvvvvvvvvvvva wdvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvva wdvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vvvvvvvvvvvvwwd CavvvvvvvvvvvvvvvvvvvvvvvvvaBwbvvvvvvvvvvvvvvvvvvvvvvvvvwwd CavvvvvvvvvvvvvvvvvvvvvvvvvaBwbvvvvvvvvvvvvv
+vvvvvvvvvaaCwvB dwCababvvvvvvvvvvvvvvvvvvaCB CvvvvvvvvvvvvvvvvvvvvvvvaaCwvB dwCababvvvvvvvvvvvvvvvvvvaCB Cvvvvvvvvvvvvvv
+vvvvvvvaBdaabva dvaBdddavvvvvvvvvvvvvvvvd avBwbvvvvvvvvvvvvvvvvvvvvaBdaabva dvaBdddavvvvvvvvvvvvvvvvd avBwbvvvvvvvvvvvvv
+vvvvvvaBbvvvvaCwwbvvvvvabbvvvvvvvvvvvvvb bvvvdCCavvvvvvvvvvvvvvvvvaBbvvvvaCwwbvvvvvabbvvvvvvvvvvvvvb bvvvdCCavvvvvvvvvvv
+vvvvbbabvvvva wbadbvvvvvvvvvvvvvvvvvvbaBCvvvvvvaCCvvvvvvvvvvvvvvbbabvvvva wbadbvvvvvvvvvvvvvvvvvvbaBCvvvvvvaCCvvvvvvvvvv
+vvvvbvvvvbaadbBBvbavvvvvvvvvvvvvvvvvbw wwvvdBbvvv ddCbvvvvvvvvvvbvvvvbaadbBBvbavvvvvvvvvvvvvvvvvbw wwvvdBbvvv ddCbvvvvvv
+vvvvvvvvvbavvbBBvvvbvvvvvvvvvvvvvvvb dbCCvvC wavvB CB bvvvvvvvvvvvvvvbavvbBBvvvbvvvvvvvvvvvvvvvb dbCCvvC wavvB CB bvvvvv
+vvvvvvvvvbvvvdCvvvvvvvvvvvvvvvvvvvvBCvvvvvawda bvvbvvCBvvvvvvvvvvvvvvbvvvdCvvvvvvvvvvvvvvvvvvvvBCvvvvvawda bvvbvvCBvvvvv
+vvvvvvvvvvvvvvddvvvvvvvvvvvvvvvvvvvwBvvvbCCavv w avvvBCvvvvvvvvvvvvvvvvvvvddvvvvvvvvvvvvvvvvvvvwBvvvbCCavv w avvvBCvvvvv
+vvvvvvvvvvvvvbddavvvvvvvvvvvvvvvvvvdwvvv dvvvb Ca vvb avvvvvvvvvvvvvvvvvvbddavvvvvvvvvvvvvvvvvvdwvvv dvvvb Ca vvb avvvvv
+vvvvvvvvvvvvbaBvbvvvvvvvvvvvvvvvvvvvCCbv bvvvbbvb bdwdvvvvvvvvvvvvvvvvvvbaBvbvvvvvvvvvvvvvvvvvvvCCbv bvvvbbvb bdwdvvvvvv
+vvvvvvvvvvvvvbdvvvvvvvvvvvvvvvvvvvvvvdCB wbvvvbd wCBbvvvvvvvvvvvvvvvvvvvvbdvvvvvvvvvvvvvvvvvvvvvvdCB wbvvvbd wCBbvvvvvvv
+vvvvvvvvvvvvvvbbvvvvvvvvvvvvvvvvvvvvvvvadwCBBBCwBabvvvvvvvvvvvvvvvvvvvvvvvbbvvvvvvvvvvvvvvvvvvvvvvvadwCBBBCwBabvvvvvvvvv
+vvvvvvvvvvvvvvvbvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvbvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
 """
 
 # Iterate over the characters in the string
 for i, char in enumerate(string):
-    if char == '*':
+    if char == 'v':
         print("\033[30m" + ' ', end="")
     else:
     # Set the color for the current character
@@ -455,13 +458,9 @@ print("")
 print(Fore.BLUE+"This is a PCAP analyzer with 3 basic steps:\n1) Show summary statistics and visualize.\n2) Examine the content of packets and look for anything fishy.\n3) Perform a time series anomaly detection algorithm to find fishy packets."+Style.RESET_ALL)
 print("")
 print("")
-print(Fore.BLUE+'General pcap reminders and tricks for ctfs\n I believe it was 0xdf that said "In ctfs, there are usually 2 types of pcap challenges
-      1) every packet is important, 2) only some packets are importnat", This tool will only be helpful for 2. finding needles in haystack, filtering out noise /n
-      Its not uncommon for a pcap to be just the first step in a forensics challenge.\n Easy challenges will typically hide the flag in something like http data in clear text or a simple encoding such as base64.\n
-      Easy challenges may also have the flag in a transfered file, maybe encoded or compressed. Question? What magic bytes indicate a zip file? Did you find a word doc with macros? Thats probably the next step/n More complex challenges may require you to find 
-      a key to decrypt data in the transfer. Question? What key would you need to decrypt SSL/TLS traffic? Even if you had the key, how do you decrypt the traffic?\n 
-      '+Style.RESET_ALL)
-
+print(Fore.BLUE+'General pcap reminders and tricks for ctfs\nI believe it was 0xdf that said "In ctfs, there are usually 2 types of pcap challenges\n1) every packet is important\n2) only some packets are importnat"\nThis tool will only be helpful for 2. finding needles in haystack, filtering out noise\nIts not uncommon for a pcap to be just the first step in a forensics challenge.\n\nEasy challenges will typically hide the flag in something like http data in clear text or a simple encoding such as base64.\nEasy challenges may also have the flag in a transfered file, maybe encoded or compressed.\n\nQuestion? What magic bytes indicate a zip file? Did you find a word doc with macros? Thats probably the next step\nMore complex challenges may require you to find a key to decrypt data in the transfer.\n\nQuestion? What key would you need to decrypt SSL/TLS traffic? Even if you had the key, how do you decrypt the traffic?\n '+Style.RESET_ALL)
+print("")
+print("")
 
 #run all
 ### Run functions
@@ -472,6 +471,7 @@ get_http_response()
 get_http_file_data()  
 get_smb()
 get_data()
+get_dns()
 # Swim fishy
 find_fishy_phrases()
 #Format df column data
@@ -665,6 +665,6 @@ def find_anomalies(df):
 		print('Anonomly detection failed')
 
 ### Run functions to create plots/detect anomalies
-#sankey(df,ip_list)
-#find_anomalies(df)
-#make_plots(df)
+sankey(df,ip_list)
+find_anomalies(df)
+make_plots(df)
