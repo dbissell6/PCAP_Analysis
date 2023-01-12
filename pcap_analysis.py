@@ -17,7 +17,25 @@ from scapy.all import *
 from scapy.layers.http import HTTP
 
 ###
-#Pcap illuminifier 
+# Pcap illuminifier
+###
+# This is a pcap analysis script for ctfs. There are 3 main steps.
+# 1) Read data in with scapy, tshark
+# 2) Parse data to construct a pandas dataframe
+# 3) Output analysis 
+# Analysis consists of 
+# a) Summary statistcs of the capture, 
+# b) charts of IPs/protocols and frequecy of traffic/datasize,
+# c) a search of content for 'fishy phrases' i.e whoami, hostname. 
+# d) Anomaly detection  
+#
+# Tool was built in the course of DFIR lessons and CTFs. The goal has been and continues to be create a tool that aids solving ctf challenges. 
+# If I come across a pcap that the script does not illuminuate, update.
+# When the tool is working it should atleast give you the story of what happened during the capture and which packets to start investigating.
+#
+# Long term goals include fixing step 1. It hurts me. 
+
+# https://github.com/dbissell6/PCAP_Analysis/edit/main/pcap_analysis.py
 ##
 parser = argparse.ArgumentParser(description="PCAP analysis only mandatory arg is -f a pcap file")
 parser.add_argument("-f", dest='pcap',help='PCAP file')
@@ -437,6 +455,12 @@ print("")
 print(Fore.BLUE+"This is a PCAP analyzer with 3 basic steps:\n1) Show summary statistics and visualize.\n2) Examine the content of packets and look for anything fishy.\n3) Perform a time series anomaly detection algorithm to find fishy packets."+Style.RESET_ALL)
 print("")
 print("")
+print(Fore.BLUE+'General pcap reminders and tricks for ctfs\n I believe it was 0xdf that said "In ctfs, there are usually 2 types of pcap challenges
+      1) every packet is important, 2) only some packets are importnat", This tool will only be helpful for 2. finding needles in haystack, filtering out noise /n
+      Its not uncommon for a pcap to be just the first step in a forensics challenge.\n Easy challenges will typically hide the flag in something like http data in clear text or a simple encoding such as base64.\n
+      Easy challenges may also have the flag in a transfered file, maybe encoded or compressed. Question? What magic bytes indicate a zip file? Did you find a word doc with macros? Thats probably the next step/n More complex challenges may require you to find 
+      a key to decrypt data in the transfer. Question? What key would you need to decrypt SSL/TLS traffic? Even if you had the key, how do you decrypt the traffic?\n 
+      '+Style.RESET_ALL)
 
 
 #run all
