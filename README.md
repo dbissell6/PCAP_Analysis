@@ -26,4 +26,6 @@ To-Do
 
 3) When 1 is done tune isolation tree
 
+4) investigate file transfers. file type, length, first packet sent on, filter content for fishy phrases,  
+
 *) The initial intake and parsing of data is a mess 
