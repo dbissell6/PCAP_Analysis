@@ -15,6 +15,7 @@ from colorama import init, Fore, Back, Style
 import base64
 from scapy.all import *
 from scapy.layers.http import HTTP
+from collections import OrderedDict
 
 ###
 # Pcap illuminifier
@@ -42,9 +43,48 @@ parser.add_argument("-f", dest='pcap',help='PCAP file')
 parser.add_argument("-p", dest='phrase',help='Add an additional fishy phrase to search for. If in HTB CTF, use HTB', default='')
 args = parser.parse_args()
 
+
+###Print Header
+
+# Initialize colorama
+init()
+
+### print multicolors
+colors = [1, 11, 41, 14, 27, 57]
+
+# Define the string to color
+
+string="""
+vvvvvvvvvvvva wdvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvva wdvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+vvvvvvvvvvvvwwd CavvvvvvvvvvvvvvvvvvvvvvvvvaBwbvvvvvvvvvvvvvvvvvvvvvvvvvwwd CavvvvvvvvvvvvvvvvvvvvvvvvvaBwbvvvvvvvvvvvvv
+vvvvvvvvvaaCwvB dwCababvvvvvvvvvvvvvvvvvvaCB CvvvvvvvvvvvvvvvvvvvvvvvaaCwvB dwCababvvvvvvvvvvvvvvvvvvaCB Cvvvvvvvvvvvvvv
+vvvvvvvaBdaabva dvaBdddavvvvvvvvvvvvvvvvd avBwbvvvvvvvvvvvvvvvvvvvvaBdaabva dvaBdddavvvvvvvvvvvvvvvvd avBwbvvvvvvvvvvvvv
+vvvvvvaBbvvvvaCwwbvvvvvabbvvvvvvvvvvvvvb bvvvdCCavvvvvvvvvvvvvvvvvaBbvvvvaCwwbvvvvvabbvvvvvvvvvvvvvb bvvvdCCavvvvvvvvvvv
+vvvvbbabvvvva wbadbvvvvvvvvvvvvvvvvvvbaBCvvvvvvaCCvvvvvvvvvvvvvvbbabvvvva wbadbvvvvvvvvvvvvvvvvvvbaBCvvvvvvaCCvvvvvvvvvv
+vvvvbvvvvbaadbBBvbavvvvvvvvvvvvvvvvvbw wwvvdBbvvv ddCbvvvvvvvvvvbvvvvbaadbBBvbavvvvvvvvvvvvvvvvvbw wwvvdBbvvv ddCbvvvvvv
+vvvvvvvvvbavvbBBvvvbvvvvvvvvvvvvvvvb dbCCvvC wavvB CB bvvvvvvvvvvvvvvbavvbBBvvvbvvvvvvvvvvvvvvvb dbCCvvC wavvB CB bvvvvv
+vvvvvvvvvbvvvdCvvvvvvvvvvvvvvvvvvvvBCvvvvvawda bvvbvvCBvvvvvvvvvvvvvvbvvvdCvvvvvvvvvvvvvvvvvvvvBCvvvvvawda bvvbvvCBvvvvv
+vvvvvvvvvvvvvvddvvvvvvvvvvvvvvvvvvvwBvvvbCCavv w avvvBCvvvvvvvvvvvvvvvvvvvddvvvvvvvvvvvvvvvvvvvwBvvvbCCavv w avvvBCvvvvv
+vvvvvvvvvvvvvbddavvvvvvvvvvvvvvvvvvdwvvv dvvvb Ca vvb avvvvvvvvvvvvvvvvvvbddavvvvvvvvvvvvvvvvvvdwvvv dvvvb Ca vvb avvvvv
+vvvvvvvvvvvvbaBvbvvvvvvvvvvvvvvvvvvvCCbv bvvvbbvb bdwdvvvvvvvvvvvvvvvvvvbaBvbvvvvvvvvvvvvvvvvvvvCCbv bvvvbbvb bdwdvvvvvv
+vvvvvvvvvvvvvbdvvvvvvvvvvvvvvvvvvvvvvdCB wbvvvbd wCBbvvvvvvvvvvvvvvvvvvvvbdvvvvvvvvvvvvvvvvvvvvvvdCB wbvvvbd wCBbvvvvvvv
+vvvvvvvvvvvvvvbbvvvvvvvvvvvvvvvvvvvvvvvadwCBBBCwBabvvvvvvvvvvvvvvvvvvvvvvvbbvvvvvvvvvvvvvvvvvvvvvvvadwCBBBCwBabvvvvvvvvv
+vvvvvvvvvvvvvvvbvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvbvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+
+"""
+
+# Iterate over the characters in the string
+for i, char in enumerate(string):
+    if char == 'v':
+        print("\033[30m" + ' ', end="")
+    else:
+    # Set the color for the current character
+        print("\033[38;5;" + str(colors[i % len(colors)]) + "m" + char, end="")
+        
 ##################################################################################################################
 ### Get a seed list of features protocol independent and output dataframe
 # Read in the PCAP file
+
 packets = rdpcap(args.pcap)
 
 # Create an empty list to store the data
@@ -414,43 +454,9 @@ def fix_IPs():
 	    
 	return ip_list
 ##################################################################################################################        
+
+
 ###Begin printing and outputing data
-
-# Initialize colorama
-init()
-
-### print multicolors
-colors = [1, 11, 41, 14, 27, 57]
-
-# Define the string to color
-
-string="""
-vvvvvvvvvvvva wdvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvva wdvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-vvvvvvvvvvvvwwd CavvvvvvvvvvvvvvvvvvvvvvvvvaBwbvvvvvvvvvvvvvvvvvvvvvvvvvwwd CavvvvvvvvvvvvvvvvvvvvvvvvvaBwbvvvvvvvvvvvvv
-vvvvvvvvvaaCwvB dwCababvvvvvvvvvvvvvvvvvvaCB CvvvvvvvvvvvvvvvvvvvvvvvaaCwvB dwCababvvvvvvvvvvvvvvvvvvaCB Cvvvvvvvvvvvvvv
-vvvvvvvaBdaabva dvaBdddavvvvvvvvvvvvvvvvd avBwbvvvvvvvvvvvvvvvvvvvvaBdaabva dvaBdddavvvvvvvvvvvvvvvvd avBwbvvvvvvvvvvvvv
-vvvvvvaBbvvvvaCwwbvvvvvabbvvvvvvvvvvvvvb bvvvdCCavvvvvvvvvvvvvvvvvaBbvvvvaCwwbvvvvvabbvvvvvvvvvvvvvb bvvvdCCavvvvvvvvvvv
-vvvvbbabvvvva wbadbvvvvvvvvvvvvvvvvvvbaBCvvvvvvaCCvvvvvvvvvvvvvvbbabvvvva wbadbvvvvvvvvvvvvvvvvvvbaBCvvvvvvaCCvvvvvvvvvv
-vvvvbvvvvbaadbBBvbavvvvvvvvvvvvvvvvvbw wwvvdBbvvv ddCbvvvvvvvvvvbvvvvbaadbBBvbavvvvvvvvvvvvvvvvvbw wwvvdBbvvv ddCbvvvvvv
-vvvvvvvvvbavvbBBvvvbvvvvvvvvvvvvvvvb dbCCvvC wavvB CB bvvvvvvvvvvvvvvbavvbBBvvvbvvvvvvvvvvvvvvvb dbCCvvC wavvB CB bvvvvv
-vvvvvvvvvbvvvdCvvvvvvvvvvvvvvvvvvvvBCvvvvvawda bvvbvvCBvvvvvvvvvvvvvvbvvvdCvvvvvvvvvvvvvvvvvvvvBCvvvvvawda bvvbvvCBvvvvv
-vvvvvvvvvvvvvvddvvvvvvvvvvvvvvvvvvvwBvvvbCCavv w avvvBCvvvvvvvvvvvvvvvvvvvddvvvvvvvvvvvvvvvvvvvwBvvvbCCavv w avvvBCvvvvv
-vvvvvvvvvvvvvbddavvvvvvvvvvvvvvvvvvdwvvv dvvvb Ca vvb avvvvvvvvvvvvvvvvvvbddavvvvvvvvvvvvvvvvvvdwvvv dvvvb Ca vvb avvvvv
-vvvvvvvvvvvvbaBvbvvvvvvvvvvvvvvvvvvvCCbv bvvvbbvb bdwdvvvvvvvvvvvvvvvvvvbaBvbvvvvvvvvvvvvvvvvvvvCCbv bvvvbbvb bdwdvvvvvv
-vvvvvvvvvvvvvbdvvvvvvvvvvvvvvvvvvvvvvdCB wbvvvbd wCBbvvvvvvvvvvvvvvvvvvvvbdvvvvvvvvvvvvvvvvvvvvvvdCB wbvvvbd wCBbvvvvvvv
-vvvvvvvvvvvvvvbbvvvvvvvvvvvvvvvvvvvvvvvadwCBBBCwBabvvvvvvvvvvvvvvvvvvvvvvvbbvvvvvvvvvvvvvvvvvvvvvvvadwCBBBCwBabvvvvvvvvv
-vvvvvvvvvvvvvvvbvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvbvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-
-"""
-
-# Iterate over the characters in the string
-for i, char in enumerate(string):
-    if char == 'v':
-        print("\033[30m" + ' ', end="")
-    else:
-    # Set the color for the current character
-        print("\033[38;5;" + str(colors[i % len(colors)]) + "m" + char, end="")
-
 # Descritpion text
 print("\033[0m")
 print("")
@@ -496,15 +502,24 @@ print('The total number of packets is:',df.shape[0])
 
 # Print the difference in a human-readable format
 print(f'Total time: {difference}')
+print("")
 
 # Print the total number of unique "Protocol" addresses
 # Get the total number of unique "Protocol" values
 num_unique_protos = df["Protocol"].nunique()
 print("Total number of Protocols:", num_unique_protos)
 
+protocol_counts = df['Protocol'].value_counts(ascending=False)
+#protocol_dict = protocol_counts.to_dict()
+protocol_dict = OrderedDict(protocol_counts)
+
+for thing,value in protocol_dict.items():
+  print(thing,': ',value)
+
 # Sort the list of IP addresses and their frequency by frequency in descending order
 ip_list.sort(key=lambda x: x[1], reverse=True)
 # Print the total number of all unique addresses
+print("")
 print("Total number of IP addresses:"+ str(len(ip_list)))
 print("")
 # Print the topx list of IP addresses and their frequency
